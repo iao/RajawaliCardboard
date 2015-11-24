@@ -17,6 +17,13 @@ android {
         }
     }
     productFlavors {
+        smartspheres {
+            minSdkVersion 19
+            applicationId 'org.openvirtualworlds.smartspheres'
+            targetSdkVersion 22
+            versionCode 2
+            versionName '1.1'
+        }
     }
 }
 

@@ -71,7 +71,7 @@ public class PanoListAdapter extends BaseAdapter {
 
             panoListChapterList.get(index).Combine(panoSet);
         } else {
-            Log.d(panoPicker.getLocalClassName(), "Download: " + panoSet.name);
+            //Log.d(panoPicker.getLocalClassName(), "Download: " + panoSet.name);
             panoListChapterList.add(panoSet);
         }
     }
@@ -95,7 +95,7 @@ public class PanoListAdapter extends BaseAdapter {
     public View getView(int position, View convertView, ViewGroup parent) {
         PanoSet chapter = panoListChapterList.get(position);
 
-        Log.d(panoPicker.getLocalClassName(), chapter.name + " " + chapter.url);
+        //Log.d(panoPicker.getLocalClassName(), chapter.name + " " + chapter.url);
 
         File dir = new File(panoPicker.getFilesDir().getPath() + "/" + chapter.getName());
 
@@ -115,7 +115,7 @@ public class PanoListAdapter extends BaseAdapter {
 
             chapterName.setText(chapter.getName());
 
-            unzip.setText("Cardboartd");
+            unzip.setText("Cardboard");
             unzip.setTag(chapter.getName());
             unzip.setOnClickListener(new View.OnClickListener() {
                 @Override

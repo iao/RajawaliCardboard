@@ -3,6 +3,7 @@ package com.eje_c.rajawalicardboard;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Point;
 import android.hardware.SensorManager;
 import android.media.MediaPlayer;
 import android.media.MediaRouter;
@@ -13,6 +14,9 @@ import android.view.OrientationEventListener;
 import android.view.WindowManager;
 
 import com.google.vrtoolkit.cardboard.CardboardActivity;
+import com.google.vrtoolkit.cardboard.Eye;
+import com.google.vrtoolkit.cardboard.HeadTransform;
+import com.google.vrtoolkit.cardboard.Viewport;
 
 import org.rajawali3d.Object3D;
 import org.rajawali3d.cardboard.RajawaliCardboardView;
@@ -37,19 +41,26 @@ public class MainActivity extends CardboardActivity {
     private MediaPlayer mMediaPlayer;
     private String dir;
     private OrientationEventListener orientationEventListener;
-    private int THRESHOLD = 1;
+    private int THRESHOLD = 5;
 
     private MediaRouter mMediaRouter;
     private DemoPresentation mPresentation;
     private boolean mPaused;
 
+    private CardboardOverlayView overlayView;
+    private boolean cardboard;
+
+    private final int mMediaTypes = MediaRouter.ROUTE_TYPE_LIVE_AUDIO | MediaRouter.ROUTE_TYPE_LIVE_VIDEO | (1 << 2) | MediaRouter.ROUTE_TYPE_USER;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        //RajLog.setDebugEnabled(true);
+
         Intent intent = getIntent();
         dir = intent.getStringExtra("dir") + "/";
-        boolean cardboard = intent.getBooleanExtra("cardboard", true);
+        cardboard = intent.getBooleanExtra("cardboard", true);
 
         Log.d(this.getLocalClassName(), dir);
 
@@ -76,8 +87,12 @@ public class MainActivity extends CardboardActivity {
                 PanoType.imagepano), new PanoLocation(new String[]{"/sdcard/PhotoTour/east_px.jpg", "/sdcard/PhotoTour/east_nx.jpg",
                 "/sdcard/PhotoTour/east_py.jpg", "/sdcard/PhotoTour/east_ny.jpg", "/sdcard/PhotoTour/east_pz.jpg", "/sdcard/PhotoTour/east_nz.jpg"}, PanoType.equirectangularpano)};*/
 
-        RajawaliCardboardView view = new RajawaliCardboardView(this);
-        setContentView(view);
+        //RajawaliCardboardView view = new RajawaliCardboardView(this);
+        //setContentView(view);
+
+        setContentView(R.layout.main_layout);
+        RajawaliCardboardView view = (RajawaliCardboardView)findViewById(R.id.cardboard_view);
+
         setCardboardView(view);
 
         if(!cardboard) {
@@ -85,16 +100,22 @@ public class MainActivity extends CardboardActivity {
         }
         //Log.d(this.getLocalClassName(), view.getScreenParams().toString());
 
-        renderer = new MyRenderer(this);
+        renderer = new MyRenderer(this, cardboard);
 
         view.setRenderer(renderer);
         view.setSurfaceRenderer(renderer);
+
+        //view.getCurrentEyeParams();
 
         orientationEventListener = new OrientationEventListener(this, SensorManager.SENSOR_DELAY_UI) {
             @Override
             public void onOrientationChanged(int orientation) {
                 if((orientation >= (360 - THRESHOLD) && orientation <= 360) || (orientation >= 0 && orientation <= THRESHOLD)) {
-                    MainActivity.this.finish();
+                    //if(renderer != null)
+                    renderer.startExit();
+                    //MainActivity.this.finish();
+                } else {
+                    renderer.cancelExit();
                 }
             }
         };
@@ -109,12 +130,43 @@ public class MainActivity extends CardboardActivity {
 
         // Get the media router service.
         mMediaRouter = (MediaRouter)getSystemService(Context.MEDIA_ROUTER_SERVICE);
+
+        HeadTransform head = new HeadTransform();
+        Eye left = new Eye(1);
+        Eye right = new Eye(2);
+        Eye one = new Eye(0);
+        Eye leftFull = new Eye(1);
+        Eye rightFull = new Eye(2);
+        Display display = getWindowManager().getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+        int width = size.x;
+        int height = size.y;
+        view.getCurrentEyeParams(head, left, right, one, leftFull, rightFull);
+        Log.v(getLocalClassName(), leftFull.getViewport().toString() + " " + rightFull.getViewport().toString() + " " + one.getViewport().toString() + " "+height + " " + width);
+
+
+        overlayView = (CardboardOverlayView) findViewById(R.id.overlay);
+        if(cardboard) {
+            overlayView.reLayout(leftFull.getViewport(), rightFull.getViewport(), one.getViewport(), height);
+        } else {
+            Viewport viewport = new Viewport();
+            viewport.x = 0;
+            viewport.y = 0;
+            viewport.height = height;
+            viewport.width = width;
+            overlayView.reLayout(viewport, rightFull.getViewport(), one.getViewport(), height);
+        }
+
+        //overlayView.show3DToast("Pull the magnet when you find an object.");
+
     }
 
     protected void onPause() {
         super.onPause();
         if(mMediaPlayer != null)
             mMediaPlayer.pause();
+
 
         // Stop listening for changes to media routes.
         mMediaRouter.removeCallback(mMediaRouterCallback);
@@ -129,8 +181,10 @@ public class MainActivity extends CardboardActivity {
         if(mMediaPlayer != null)
             mMediaPlayer.start();
 
+
         // Listen for changes to media routes.
-        mMediaRouter.addCallback(MediaRouter.ROUTE_TYPE_LIVE_VIDEO, mMediaRouterCallback);
+        mMediaRouter.addCallback(mMediaTypes, mMediaRouterCallback);
+        //mMediaRouter.addCallback(mMediaTypes, mMediaRouterCallback);
 
         // Update the presentation based on the currently selected route.
         mPaused = false;
@@ -156,6 +210,7 @@ public class MainActivity extends CardboardActivity {
                     break;
                 case XmlPullParser.START_TAG:
                     name = parser.getName();
+                    //Log.d(getLocalClassName(), name);
                     if (name.equalsIgnoreCase("panos")){
                         panos = true;
                     } else if(panos) {
@@ -180,8 +235,10 @@ public class MainActivity extends CardboardActivity {
                                 panoIDs.put(parser.nextText(), locations.size());
                             } else if (name.equalsIgnoreCase("description")) {
                                 currentPano.description = parser.nextText();
+                                Log.d(getLocalClassName(), "| "+currentPano.description);
                             } else if (name.equalsIgnoreCase("name")) {
                                 currentPano.name = parser.nextText();
+                                //Log.d(getLocalClassName(), currentPano.name);
                             } else if (name.equalsIgnoreCase("latitude")) {
                                 try {
                                     currentPano.latatude = Double.parseDouble(parser.nextText());
@@ -277,13 +334,31 @@ public class MainActivity extends CardboardActivity {
         loadPano();
     }
 
+    MediaPlayer.OnPreparedListener prepListener = new MediaPlayer.OnPreparedListener() {
+        @Override
+        public void onPrepared(MediaPlayer mediaPlayer) {
+            mediaPlayer.start();
+        }
+    };
+
     public void loadPano() {
+
         if(mMediaPlayer != null) {
             mMediaPlayer.stop();
             mMediaPlayer.release();
             mMediaPlayer = null;
         }
-        PanoLocation pano = panoLocations[panoIndex];
+        if(!cardboard) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    overlayView.clearImage();
+                }
+            });
+
+        }
+
+        final PanoLocation pano = panoLocations[panoIndex];
         switch (pano.type) {
             case equirectangularpano:
                 renderer.loadPhotoSpherePanorama(panoLocations[panoIndex].images[1]);
@@ -292,17 +367,52 @@ public class MainActivity extends CardboardActivity {
                 break;
             case imagepano:
                 renderer.loadCubeMapPanorama(panoLocations[panoIndex].images);
+                //renderer.loadPhotoSperePanorama(R.drawable.pano_1_1, R.drawable.pano_1_2);
                 if(mPresentation != null)
                     mPresentation.setLoadCubeMapPanorama(panoLocations[panoIndex].images);
                 break;
             case videopano:
                 renderer.loadVideoSpherePanorama(panoLocations[panoIndex].images[1]);
                 break;
+            case image:
+                if(cardboard) {
+                    renderer.loadImage(panoLocations[panoIndex].images[1]);
+                } else {
+                    renderer.clear();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            overlayView.setImage(panoLocations[panoIndex].images[1]);
+                        }
+                    });
+
+                }
+                break;
+            case video:
+                renderer.loadVideo(panoLocations[panoIndex].images[1]);
+                break;
         }
         if(pano.description != null && !pano.description.equals("")) {
-            renderer.loadDescription(pano.description);
+            //renderer.loadDescription(pano.description);
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    overlayView.show3DToast(pano.description);
+                }
+            });
+
+        } else {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    overlayView.clear3dToast();
+                }
+            });
         }
-        if(pano.audioFile != null) {
+
+
+        if (pano.audioFile != null) {
             mMediaPlayer = new MediaPlayer();
             try {
                 mMediaPlayer.setDataSource(pano.audioFile);
@@ -313,6 +423,8 @@ public class MainActivity extends CardboardActivity {
             mMediaPlayer.start();
         }
         renderHotspots(pano);
+
+
 
     }
 
@@ -325,8 +437,7 @@ public class MainActivity extends CardboardActivity {
 
     private void updatePresentation() {
         // Get the current route and its presentation display.
-        MediaRouter.RouteInfo route = mMediaRouter.getSelectedRoute(
-                MediaRouter.ROUTE_TYPE_LIVE_VIDEO);
+        MediaRouter.RouteInfo route = mMediaRouter.getSelectedRoute(mMediaTypes);
         Display presentationDisplay = route != null ? route.getPresentationDisplay() : null;
 
         // Dismiss the current presentation if the display has changed.
@@ -402,7 +513,7 @@ public class MainActivity extends CardboardActivity {
             };
 
     public enum PanoType {
-        imagepano, equirectangularpano, videopano
+        imagepano, equirectangularpano, videopano, image, video
     }
 
     public class PanoLocation {

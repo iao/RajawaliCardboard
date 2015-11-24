@@ -2,16 +2,22 @@ package com.eje_c.rajawalicardboard;
 
 import android.app.Presentation;
 import android.content.Context;
+import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Rect;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
 
 import org.rajawali3d.math.Quaternion;
 import org.rajawali3d.math.vector.Vector3;
+import org.rajawali3d.util.Capabilities;
 
 import min3d.Shared;
 import min3d.Utils;
@@ -39,6 +45,8 @@ public class DemoPresentation extends Presentation implements ISceneController {
     private String[] cubeStr;
     private String panoStr;
     private ToLoad toLoad = ToLoad.none;
+    private Light mLight;
+    private Quaternion quaternion;
 
     final Runnable _initSceneRunnable = new Runnable()
     {
@@ -87,6 +95,21 @@ public class DemoPresentation extends Presentation implements ISceneController {
         _glSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
 
         onCreateSetContentView();
+
+        DisplayMetrics dm = new DisplayMetrics();
+        DisplayMetrics dm1 = getResources().getDisplayMetrics();
+        getDisplay().getMetrics(dm);
+        Resources res = getResources();
+        Configuration config = res.getConfiguration();
+
+        Log.d("PresentationRender", dm.toString()+ " " + dm1 + " " + config.densityDpi + " " + dm.equals(dm1));
+        //config.densityDpi = 212;
+        //res.updateConfiguration(config, dm);
+        dm1.density = dm.density;
+        dm1.scaledDensity = dm.scaledDensity;
+
+
+        Log.d("PresentationRender", dm.toString() + " " + getResources().getDisplayMetrics() + " " + config.densityDpi + " " + dm.equals(dm1));
     }
 
 
@@ -123,7 +146,8 @@ public class DemoPresentation extends Presentation implements ISceneController {
 
         scene.camera().position.setAll(0, 0, 0);
         //getCurrentCamera().setPosition(Vector3.ZERO);
-        scene.lights().add(new Light());
+        mLight = new Light();
+        scene.lights().add(mLight);
 
 
         /*sq = new ScreenQuad();
@@ -134,6 +158,7 @@ public class DemoPresentation extends Presentation implements ISceneController {
         //loadCubeMapPanorama(R.drawable.east_nx, R.drawable.east_ny, R.drawable.east_nz, R.drawable.east_px, R.drawable.east_py, R.drawable.east_pz);
 
         //loadPhotoSpherePanorama(R.drawable.panorama);
+        scene.camera().frustum.shortSideLength(3.0f);
 
     }
 
@@ -145,7 +170,8 @@ public class DemoPresentation extends Presentation implements ISceneController {
     private void loadPhotoSpherePanorama(int panorama) {
         scene.reset();
         scene.camera().position.setAll(0, 0, 0);
-        scene.lights().add(new Light());
+        mLight = new Light();
+        scene.lights().add(mLight);
 
         min3d.objectPrimitives.Sphere sphere = new min3d.objectPrimitives.Sphere(50, 64, 32);
         sphere.scale().x = -1;
@@ -168,11 +194,18 @@ public class DemoPresentation extends Presentation implements ISceneController {
     private void loadPhotoSpherePanorama(String texture) {
         scene.reset();
         scene.camera().position.setAll(0, 0, 0);
-        scene.lights().add(new Light());
+        mLight = new Light();
+        scene.lights().add(mLight);
 
         min3d.objectPrimitives.Sphere sphere = new min3d.objectPrimitives.Sphere(50, 64, 32);
         sphere.scale().x = -1;
         Bitmap bitmap = BitmapFactory.decodeFile(texture);
+        int size = Math.max(bitmap.getWidth(), bitmap.getHeight());
+        int maxTextureSize = Capabilities.getInstance().getMaxTextureSize();
+        if(maxTextureSize < size) {
+            bitmap = resizeBitmap(bitmap, maxTextureSize);
+        }
+
         TextureManager texMan = Shared.textureManager();
         if(texMan.contains("sphereTexture"+idCount))
             texMan.deleteTexture("sphereTexture"+idCount);
@@ -183,6 +216,14 @@ public class DemoPresentation extends Presentation implements ISceneController {
         scene.addChild(sphere);
     }
 
+    public Bitmap resizeBitmap(Bitmap bitmap, int texturesize) {
+        Bitmap nb = Bitmap.createBitmap(texturesize, texturesize/2, bitmap.getConfig());
+        Canvas canvas = new Canvas(nb);
+        canvas.drawBitmap(bitmap, null, new Rect(0, 0, texturesize, texturesize/2), null);
+        bitmap.recycle();
+        return nb;
+    }
+
     public void setLoadCubeMapPanorama(int nx, int ny, int nz, int px, int py, int pz) {
         toLoad = ToLoad.imagepanoNum;
         cubeNums = new int[] {nx, ny, nz, px, py, pz};
@@ -191,7 +232,8 @@ public class DemoPresentation extends Presentation implements ISceneController {
     private void loadCubeMapPanorama(int nx, int ny, int nz, int px, int py, int pz) {
         scene.reset();
         scene.camera().position.setAll(0, 0, 0);
-        scene.lights().add(new Light());
+        mLight = new Light();
+        scene.lights().add(mLight);
 
         SkyBox skyBox = new SkyBox(100, 2);
         TextureManager texMan = Shared.textureManager();
@@ -250,7 +292,7 @@ public class DemoPresentation extends Presentation implements ISceneController {
         skyBox.addTexture(SkyBox.Face.East, BitmapFactory.decodeFile(texture[5]), "px"+idCount);
 
         skyBox.addTexture(SkyBox.Face.North, BitmapFactory.decodeFile(texture[2]), "nz"+idCount);
-        skyBox.addTexture(SkyBox.Face.South, BitmapFactory.decodeFile(texture[3]), "pz"+idCount);
+        skyBox.addTexture(SkyBox.Face.South, BitmapFactory.decodeFile(texture[3]), "pz" + idCount);
 
         skyBox.addTexture(SkyBox.Face.Down, BitmapFactory.decodeFile(texture[1]), "ny" + idCount);
         skyBox.addTexture(SkyBox.Face.Up, BitmapFactory.decodeFile(texture[4]), "py" + idCount);
@@ -260,25 +302,33 @@ public class DemoPresentation extends Presentation implements ISceneController {
 
     @Override
     public void updateScene() {
-        switch (toLoad) {
-            case imagepano:
-                loadCubeMapPanorama(cubeStr);
-                panoStr = null;
-                break;
-            case imagepanoNum:
-                loadCubeMapPanorama(cubeNums[0], cubeNums[1], cubeNums[2], cubeNums[3], cubeNums[4], cubeNums[5]);
-                cubeNums = null;
-                break;
-            case equirectangularpano:
-                loadPhotoSpherePanorama(panoStr);
-                break;
-            case equirectangularpanoNum:
-                loadPhotoSpherePanorama(panoNum);
-                break;
+        if(toLoad != ToLoad.none) {
+            switch (toLoad) {
+                case imagepano:
+                    loadCubeMapPanorama(cubeStr);
+                    panoStr = null;
+                    break;
+                case imagepanoNum:
+                    loadCubeMapPanorama(cubeNums[0], cubeNums[1], cubeNums[2], cubeNums[3], cubeNums[4], cubeNums[5]);
+                    cubeNums = null;
+                    break;
+                case equirectangularpano:
+                    loadPhotoSpherePanorama(panoStr);
+                    break;
+                case equirectangularpanoNum:
+                    loadPhotoSpherePanorama(panoNum);
+                    break;
+            }
+            toLoad = ToLoad.none;
         }
-        toLoad = ToLoad.none;
 
-        Quaternion q = renderer.getCurrentCamera().getOrientation();
+        if(quaternion == null) {
+            quaternion = renderer.getHeadViewQuaternion();
+        } else {
+            quaternion.slerp(renderer.getHeadViewQuaternion(), 0.1);
+        }
+        //Log.d("PresentationRender", quaternion.toString());
+        //Quaternion q = renderer.getCurrentCamera().getOrientation();
         //Log.d("PresentationRender", "updateScene " + q.getYaw() + " " + q.getRoll() + "  " + q.getPitch());
 
         scene.camera().upAxis.setAll(0, 1, 0);
@@ -286,13 +336,14 @@ public class DemoPresentation extends Presentation implements ISceneController {
         //scene.camera().upAxis.rotateY((float) q.getRoll());
         //scene.camera().upAxis.rotateZ((float) q.getRoll());
         Vector3 target = new Vector3(0, 0, 5);
-        target.rotateBy(q);
+        target.rotateBy(quaternion);
         scene.camera().target.setAll((float)target.x, (float)target.y * -1f, (float)target.z);
 
         /*scene.camera().target.setAll(0, 0, 5);
         scene.camera().target.rotateX((float) q.getPitch());
         scene.camera().target.rotateY((float) q.getYaw() * -1f);*/
         /*renderer.getCurrentCamera().getViewMatrix();*/
+        mLight.position.setAll((float)target.x, (float)target.y * -1f, (float)target.z);
     }
 
     /**

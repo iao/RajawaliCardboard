@@ -37,8 +37,12 @@ public final class RajLog {
     }
 
     public static void d(String msg) {
-        if (debugEnabled)
-            Log.d(TAG, msg);
+        if (debugEnabled) {
+            //Log.d(TAG, msg);
+            for( String line : msg.split("\n") ) {
+                Log.d( TAG, line );
+            }
+        }
     }
 
     public static void e(String msg) {

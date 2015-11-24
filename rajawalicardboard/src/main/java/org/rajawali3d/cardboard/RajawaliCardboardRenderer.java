@@ -39,7 +39,7 @@ public abstract class RajawaliCardboardRenderer extends RajawaliRenderer impleme
     private float[] mHeadView;
 
     public RajawaliCardboardRenderer(Context context) {
-        super(context);
+        this(context, false);
     }
 
     public RajawaliCardboardRenderer(Context context, boolean registerForResources) {
@@ -55,9 +55,16 @@ public abstract class RajawaliCardboardRenderer extends RajawaliRenderer impleme
         mHeadTranslation = new Vector3();
     }
 
+    public Quaternion getHeadViewQuaternion() {
+        return mHeadViewQuaternion;
+    }
+
     @Override
     public void onNewFrame(HeadTransform headTransform) {
         super.onRenderFrame(null);
+        headTransform.getHeadView(mHeadView, 0);
+        mHeadViewMatrix.setAll(mHeadView);
+        mHeadViewQuaternion.fromMatrix(mHeadViewMatrix);
     }
 
     @Override

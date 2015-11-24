@@ -39,12 +39,14 @@ public class PanoPicker extends Activity implements View.OnClickListener {
         ListView panoList = (ListView) findViewById(R.id.mainListView);
         panoList.setAdapter(panoListAdapter);
 
-        new ProgressTask("http://138.251.213.207/panodemo/panolist.php").execute();
+        new ProgressTask("http://openvirtualworlds.org/panodemo/panolist.php").execute();
+        //new ProgressTask("http://138.251.213.207/panodemo/panolist.php").execute();
     }
 
     public void refresh(View v) {
         panoListAdapter.refresh();
-        new ProgressTask("http://138.251.213.207/panodemo/panolist.php").execute();
+        new ProgressTask("http://openvirtualworlds.org/panodemo/panolist.php").execute();
+        //new ProgressTask("http://138.251.213.207/panodemo/panolist.php").execute();
     }
 
     @Override
@@ -103,12 +105,12 @@ public class PanoPicker extends Activity implements View.OnClickListener {
 
         public ProgressTask(String url) {
             this.url = url;
-            panoSets = new ArrayList<PanoSet>();
+            panoSets = new ArrayList<>();
         }
 
         @Override
         protected Boolean doInBackground(String... params) {
-            JSONArray json = null;
+            JSONArray json;
             try {
                 json = JSONParser.getJSONFromUrl(url);
 
