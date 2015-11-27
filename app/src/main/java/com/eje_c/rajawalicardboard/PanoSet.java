@@ -7,6 +7,7 @@ public class PanoSet {
     public String url;
     public boolean downloaded = false;
     public File file;
+    public long mtime;
 
     public String getName () {
         return name;
@@ -18,9 +19,10 @@ public class PanoSet {
         this.downloaded = true;
     }
 
-    public PanoSet (String url, String name) {
+    public PanoSet (String url, String name, long mtime) {
         this.url = url;
         this.name = name;
+        this.mtime = mtime;
     }
 
     public boolean equals(Object o) {
@@ -32,5 +34,6 @@ public class PanoSet {
 
     public void Combine(PanoSet panoSet) {
         this.url = panoSet.url;
+        this.mtime = panoSet.mtime;
     }
 }

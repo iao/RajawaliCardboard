@@ -139,6 +139,7 @@ public class MyRenderer extends RajawaliCardboardRenderer {
             exitTimer++;
             if(exitTimer > 30) {
                 clear();
+                ((MainActivity)getContext()).ClearOverlay();
                 ((MainActivity)getContext()).finish();
                 Vibrator v = (Vibrator) getContext().getSystemService(Context.VIBRATOR_SERVICE);
                 // Vibrate for 500 milliseconds

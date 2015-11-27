@@ -1,7 +1,7 @@
 <resources>
 
     <style name="AppTheme" parent="android:Theme.DeviceDefault.NoActionBar.Fullscreen">
-
+        <item name="android:windowBackground">@color/backgroundColor</item>
     </style>
 
 </resources>

@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">SmartSpheres</string>
+    <string name="panosurl">http://openvirtualworlds.org/panodemo/panolist.php</string>
+</resources>

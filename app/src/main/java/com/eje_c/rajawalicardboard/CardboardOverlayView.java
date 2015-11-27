@@ -19,6 +19,7 @@ package com.eje_c.rajawalicardboard;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -29,8 +30,10 @@ import android.view.ViewGroup;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.ImageView;
+import android.widget.MediaController;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.VideoView;
 
 import com.google.vrtoolkit.cardboard.Viewport;
 
@@ -40,8 +43,8 @@ import com.google.vrtoolkit.cardboard.Viewport;
 public class CardboardOverlayView extends RelativeLayout {
     private final CardboardOverlayEyeView leftView;
     private final CardboardOverlayEyeView rightView;
-    private final CardboardOverlayEyeView fullView;
     private AlphaAnimation textFadeAnimation;
+    private boolean cardboard = true;
 
     public CardboardOverlayView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -59,13 +62,10 @@ public class CardboardOverlayView extends RelativeLayout {
         rightView.setLayoutParams(params);
         addView(rightView);
 
-        fullView = new CardboardOverlayEyeView(context, attrs);
-        fullView.setLayoutParams(params);
-        addView(fullView);
 
         // Set some reasonable defaults.
         setDepthOffset(0.01f);
-        setColor(Color.rgb(150, 255, 180));
+        setColor(context.getResources().getColor(R.color.ToastColor));
         setVisibility(View.VISIBLE);
 
         textFadeAnimation = new AlphaAnimation(1.0f, 0.0f);
@@ -84,10 +84,6 @@ public class CardboardOverlayView extends RelativeLayout {
         params = new LayoutParams(right.width, right.height);
         params.setMargins(right.x, height - right.height + right.y, 0, 0);
         rightView.setLayoutParams(params);
-
-        params = new LayoutParams(left.width + right.width, left.height);
-        params.setMargins(left.x, height - right.height + right.y, 0, 0);
-        fullView.setLayoutParams(params);
     }
 
     public void show3DToast(String message) {
@@ -102,10 +98,28 @@ public class CardboardOverlayView extends RelativeLayout {
         startAnimation(textFadeAnimation);
     }
 
+    public void setCardboard(boolean cardboard) {
+        this.cardboard = cardboard;
+    }
+
+    public void clear() {
+        clear3dToast();
+        StopVideo();
+        clearImage();
+    }
+
     public void clear3dToast() {
         clearAnimation();
         setText("");
         setTextAlpha(0f);
+    }
+
+    public void PlayVideo(String path) {
+        leftView.PlayVideo(path);
+    }
+
+    public void StopVideo() {
+        leftView.StopVideo();
     }
 
     private abstract class EndAnimationListener implements Animation.AnimationListener {
@@ -120,7 +134,8 @@ public class CardboardOverlayView extends RelativeLayout {
 
     private void setText(String text) {
         leftView.setText(text);
-        rightView.setText(text);
+        if(cardboard)
+            rightView.setText(text);
     }
 
     private void setTextAlpha(float alpha) {
@@ -133,23 +148,28 @@ public class CardboardOverlayView extends RelativeLayout {
         rightView.setColor(color);
     }
 
-    public void setFullImage(int id) {
-        fullView.imageView.setImageResource(id);
-    }
-
     public void setImage(int id) {
         leftView.setImage(id);
-        rightView.setImage(id);
+        if(cardboard)
+            rightView.setImage(id);
     }
 
     public void setImage(String image) {
         leftView.setImage(image);
-        rightView.setImage(image);
+        if(cardboard)
+            rightView.setImage(image);
     }
 
     public void clearImage() {
         leftView.clearImage();
-        rightView.clearImage();
+        if(cardboard)
+            rightView.clearImage();
+    }
+
+    public void setTextSize(float size) {
+        leftView.setTextSize(size);
+        if(cardboard)
+            rightView.setTextSize(size);
     }
 
     /**
@@ -162,6 +182,9 @@ public class CardboardOverlayView extends RelativeLayout {
         private final ImageView imageView;
         private final TextView textView;
         private float offset;
+
+        private VideoView videoView;
+        private MediaPlayer mediaPlayer;
 
         public CardboardOverlayEyeView(Context context, AttributeSet attrs) {
             super(context, attrs);
@@ -176,6 +199,49 @@ public class CardboardOverlayView extends RelativeLayout {
             textView.setGravity(Gravity.CENTER);
             textView.setShadowLayer(3.0f, 0.0f, 0.0f, Color.DKGRAY);
             addView(textView);
+        }
+
+        public void PlayVideo(String path) {
+            videoView = new VideoView(getContext());
+            videoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                @Override
+                public void onPrepared(MediaPlayer mp) {
+                    mediaPlayer = mp;
+                    mediaPlayer.setLooping(true);
+                }
+            });
+
+            videoView.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+                @Override
+                public boolean onError(MediaPlayer mp, int what, int extra) {
+                    show3DToast("Failed to Play Video");
+                    return true;
+                }
+            });
+            /*RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(1000, 1000);
+            lp.addRule(RelativeLayout.);*/
+            videoView.setMediaController(new MediaController(getContext()));
+            videoView.setVideoPath(path);
+            //videoView.requestFocus();
+
+            videoView.start();
+            addView(videoView);
+            videoView.setZOrderOnTop(true);
+            requestLayout();
+
+        }
+
+        public void setTextSize(float size) {
+            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, size);
+        }
+
+        public void StopVideo() {
+            if(videoView != null) {
+                removeView(videoView);
+                videoView.stopPlayback();
+                videoView = null;
+                mediaPlayer = null;
+            }
         }
 
         public void setColor(int color) {
@@ -235,11 +301,39 @@ public class CardboardOverlayView extends RelativeLayout {
                 adjustedOffset = 3.8f * offset;
             }
             float imageMargin = 0;
-            float leftMargin = (int) (width * (imageMargin + adjustedOffset));
-            float topMargin = (int) (height * (imageMargin + verticalImageOffset));
+            float leftMargin = 0;
+            float topMargin = 0;
             imageView.layout(
                     (int) leftMargin, (int) topMargin,
-                    (int) (leftMargin + width * imageSize), (int) (topMargin + height * imageSize));
+                    (int) (leftMargin + width), (int) (topMargin + height));
+
+            if(videoView != null) {
+                int videoPlayerWidth = width;
+                int videoPlayerHeight = height;
+                int videoLeftMargin = (int) leftMargin;
+                int videoTopMargin = (int) topMargin;
+                if(mediaPlayer != null) {
+                    int videoWidth = mediaPlayer.getVideoWidth();
+                    int videoHeight = mediaPlayer.getVideoHeight();
+                    videoPlayerWidth = height * videoWidth / videoHeight;
+                    if(videoPlayerWidth > width) {
+                        videoPlayerWidth = width;
+                        videoPlayerHeight = width * videoHeight / videoWidth;
+                    }
+                    Log.v("Overlay", "Height: " + height+ " Width: "+width+ " Video Height: "+videoHeight+ " Width:"+videoWidth+ " Calculated Height: "+videoPlayerHeight+ " Width: "+videoPlayerWidth);
+
+                    if (videoPlayerWidth > 1000) {
+                        adjustedOffset = 3.8f * offset;
+                    }
+                    //videoLeftMargin = (int) (videoPlayerWidth * (imageMargin + adjustedOffset));
+                    videoLeftMargin =  (width - videoPlayerWidth) / 2;
+                    videoTopMargin = (height - videoPlayerHeight) / 2;
+                }
+
+                videoView.layout(
+                        videoLeftMargin, videoTopMargin,
+                        (videoLeftMargin + videoPlayerWidth), (videoTopMargin + videoPlayerHeight));
+            }
 
             // Layout TextView
             leftMargin = adjustedOffset * width;

@@ -24,6 +24,13 @@ android {
             versionCode 2
             versionName '1.1'
         }
+        ntstours {
+            minSdkVersion 19
+            applicationId 'org.openvirtualworlds.ntstours'
+            targetSdkVersion 22
+            versionCode 1
+            versionName '1.2'
+        }
     }
 }
 

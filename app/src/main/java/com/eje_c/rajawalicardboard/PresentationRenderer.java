@@ -56,7 +56,7 @@ public class PresentationRenderer extends RajawaliRenderer {
         sq.setTransparent(true);
         sq.setMaterial(m);
         getCurrentScene().addChild(sq);*/
-        loadCubeMapPanorama(R.drawable.east_nx, R.drawable.east_ny, R.drawable.east_nz, R.drawable.east_px, R.drawable.east_py, R.drawable.east_pz);
+        //loadCubeMapPanorama(R.drawable.east_nx, R.drawable.east_ny, R.drawable.east_nz, R.drawable.east_px, R.drawable.east_py, R.drawable.east_pz);
 
         /*Texture texture;
         texture = new Texture("photo1", R.drawable.next);
@@ -82,7 +82,7 @@ public class PresentationRenderer extends RajawaliRenderer {
 
     public void delayedInit() {
         getCurrentScene().resetGLState();
-        loadPhotoSpherePanorama(R.drawable.panorama);
+        //loadPhotoSpherePanorama(R.drawable.panorama);
 
     }
 

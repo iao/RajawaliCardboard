@@ -42,6 +42,7 @@ public class MainActivity extends CardboardActivity {
     private String dir;
     private OrientationEventListener orientationEventListener;
     private int THRESHOLD = 5;
+    private boolean loading = false;
 
     private MediaRouter mMediaRouter;
     private DemoPresentation mPresentation;
@@ -150,12 +151,14 @@ public class MainActivity extends CardboardActivity {
         if(cardboard) {
             overlayView.reLayout(leftFull.getViewport(), rightFull.getViewport(), one.getViewport(), height);
         } else {
+            overlayView.setCardboard(cardboard);
             Viewport viewport = new Viewport();
             viewport.x = 0;
             viewport.y = 0;
             viewport.height = height;
             viewport.width = width;
             overlayView.reLayout(viewport, rightFull.getViewport(), one.getViewport(), height);
+            overlayView.setTextSize(30f);
         }
 
         //overlayView.show3DToast("Pull the magnet when you find an object.");
@@ -235,7 +238,7 @@ public class MainActivity extends CardboardActivity {
                                 panoIDs.put(parser.nextText(), locations.size());
                             } else if (name.equalsIgnoreCase("description")) {
                                 currentPano.description = parser.nextText();
-                                Log.d(getLocalClassName(), "| "+currentPano.description);
+                                //Log.d(getLocalClassName(), "| "+currentPano.description);
                             } else if (name.equalsIgnoreCase("name")) {
                                 currentPano.name = parser.nextText();
                                 //Log.d(getLocalClassName(), currentPano.name);
@@ -324,14 +327,29 @@ public class MainActivity extends CardboardActivity {
 
 
     public void onCardboardTrigger() {
+        if(loading) return;
         panoIndex++;
         panoIndex %= panoLocations.length;
-        loadPano();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                loadPano();
+            }
+        }).start();
     }
 
     public void loadPano(int index) {
         this.panoIndex = index;
         loadPano();
+    }
+
+    public void ClearOverlay() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                overlayView.clear();
+            }
+        });
     }
 
     MediaPlayer.OnPreparedListener prepListener = new MediaPlayer.OnPreparedListener() {
@@ -342,7 +360,7 @@ public class MainActivity extends CardboardActivity {
     };
 
     public void loadPano() {
-
+        loading = true;
         if(mMediaPlayer != null) {
             mMediaPlayer.stop();
             mMediaPlayer.release();
@@ -357,6 +375,13 @@ public class MainActivity extends CardboardActivity {
             });
 
         }
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                overlayView.StopVideo();
+            }
+        });
 
         final PanoLocation pano = panoLocations[panoIndex];
         switch (pano.type) {
@@ -389,7 +414,17 @@ public class MainActivity extends CardboardActivity {
                 }
                 break;
             case video:
-                renderer.loadVideo(panoLocations[panoIndex].images[1]);
+                if(cardboard)
+                    renderer.loadVideo(panoLocations[panoIndex].images[1]);
+                else {
+                    renderer.clear();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            overlayView.PlayVideo(panoLocations[panoIndex].images[1]);
+                        }
+                    });
+                }
                 break;
         }
         if(pano.description != null && !pano.description.equals("")) {
@@ -424,7 +459,7 @@ public class MainActivity extends CardboardActivity {
         }
         renderHotspots(pano);
 
-
+        loading = false;
 
     }
 

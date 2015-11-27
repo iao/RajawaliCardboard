@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="backgroundColor">#231f20</color>
+    <color name="NTSGreen">#78a22f</color>
+    <color name="NTSDuckEgg">#a0c3da</color>
+    <color name="NTSBrown">#753e00</color>
+    <color name="NTSMustard">#ad8505</color>
+    <color name="NTSSkyBlue">#33cccc</color>
+    <color name="NTSStone">#c5c19d</color>
+    <color name="NTSGinger">#ce7019</color>
+    <color name="NTSMint">#9bc2b9</color>
+    <color name="Green">#78a22f</color>
+    <color name="ToastColor">#78a22f</color>
+</resources>

@@ -39,15 +39,16 @@ public class PanoPicker extends Activity implements View.OnClickListener {
         ListView panoList = (ListView) findViewById(R.id.mainListView);
         panoList.setAdapter(panoListAdapter);
 
-        new ProgressTask("http://openvirtualworlds.org/panodemo/panolist.php").execute();
+        new ProgressTask(getString(R.string.panosurl)).execute();
         //new ProgressTask("http://138.251.213.207/panodemo/panolist.php").execute();
     }
 
     public void refresh(View v) {
         panoListAdapter.refresh();
-        new ProgressTask("http://openvirtualworlds.org/panodemo/panolist.php").execute();
+        new ProgressTask(getString(R.string.panosurl)).execute();
         //new ProgressTask("http://138.251.213.207/panodemo/panolist.php").execute();
     }
+
 
     @Override
     public void onClick(View v) {
@@ -121,9 +122,10 @@ public class PanoPicker extends Activity implements View.OnClickListener {
                     JSONObject c = json.getJSONObject(i);
                     String name = c.getString("name");
                     String url = c.getString("url").replace(" ", "%20");
-                    panoSets.add(new PanoSet(url, name));
+                    long mtime = c.getLong("time");
+                    panoSets.add(new PanoSet(url, name, mtime*1000));
                     added = true;
-                    Log.d(PanoPicker.this.getLocalClassName(), "Name: "+name+" URL: "+url);
+                    Log.d(PanoPicker.this.getLocalClassName(), "Name: " + name + " URL: " + url + " Time: " + mtime);
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }

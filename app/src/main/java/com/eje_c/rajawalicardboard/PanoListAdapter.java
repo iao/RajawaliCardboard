@@ -20,8 +20,10 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Created by iao on 07/10/15.
@@ -30,8 +32,12 @@ public class PanoListAdapter extends BaseAdapter {
 
     private List<PanoSet> panoListChapterList;
     private PanoPicker panoPicker;
+    private SimpleDateFormat sdf;
+    private String paths;
 
     public PanoListAdapter(PanoPicker panoPicker) {
+        paths = panoPicker.getString(R.string.zippath);
+        sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.UK);
         panoListChapterList = new ArrayList<PanoSet>();
         scanDir();
 
@@ -44,7 +50,7 @@ public class PanoListAdapter extends BaseAdapter {
     }
 
     public void scanDir() {
-        File directory =  new File("/sdcard/PhotoTour/");
+        File directory =  new File(paths);
         if(!directory.exists())
             directory.mkdir();
         File[] files = directory.listFiles(new FilenameFilter() {
@@ -98,6 +104,14 @@ public class PanoListAdapter extends BaseAdapter {
         //Log.d(panoPicker.getLocalClassName(), chapter.name + " " + chapter.url);
 
         File dir = new File(panoPicker.getFilesDir().getPath() + "/" + chapter.getName());
+        File zipfile = new File(paths + chapter.getName());
+        boolean updateable = false;
+
+        if(zipfile.exists()) {
+            //Log.d(panoPicker.getLocalClassName(), chapter.getName() + " | Time: " + sdf.format(new Date(zipfile.lastModified())) + " " + sdf.format(new Date(chapter.mtime)) + " " + sdf.format(new Date((zipfile.lastModified() - chapter.mtime))));
+            if((zipfile.lastModified() - chapter.mtime) < 0)
+                updateable = true;
+        }
 
         if(chapter.downloaded && dir.exists()) {
 
@@ -146,13 +160,15 @@ public class PanoListAdapter extends BaseAdapter {
 
 
             run1.setText("Redownload");
+            if(updateable)
+                run1.setBackgroundColor(panoPicker.getResources().getColor(R.color.Green));
             run1.setTag(position);
             run1.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     PanoSet panoSet = panoListChapterList.get((Integer) v.getTag());
                     Log.d(panoPicker.getLocalClassName(), "Download: " + panoSet.url);
-                    new DownloadTask(panoPicker, panoSet.url, new File("/sdcard/PhotoTour/"+panoSet.name), panoSet).execute();
+                    new DownloadTask(panoPicker, panoSet.url, new File(paths+panoSet.name), panoSet).execute();
                 }
             });
         } else {
@@ -167,14 +183,14 @@ public class PanoListAdapter extends BaseAdapter {
 
             chapterName.setText(chapter.getName());
 
-            File zipfile = new File("/sdcard/PhotoTour/" + chapter.getName());
+
             if(zipfile.exists()) {
                 download.setText("Unzip");
                 download.setTag(chapter.getName());
                 download.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        File zipfile = new File("/sdcard/PhotoTour/" + v.getTag().toString());
+                        File zipfile = new File(paths + v.getTag().toString());
                         File dir = new File(panoPicker.getFilesDir().getPath() + "/" + v.getTag().toString());
                         if(dir.exists()) {
                             dir.delete();
@@ -191,7 +207,7 @@ public class PanoListAdapter extends BaseAdapter {
                     public void onClick(View v) {
                         PanoSet panoSet = panoListChapterList.get((Integer) v.getTag());
                         Log.d(panoPicker.getLocalClassName(), "Download: " + panoSet.url);
-                        new DownloadTask(panoPicker, panoSet.url, new File("/sdcard/PhotoTour/" + panoSet.name), panoSet).execute();
+                        new DownloadTask(panoPicker, panoSet.url, new File(paths + panoSet.name), panoSet).execute();
                     }
                 });
             }
@@ -252,7 +268,7 @@ public class PanoListAdapter extends BaseAdapter {
             if (dialog.isShowing()) {
                 dialog.dismiss();
             }
-            File zipfile = new File("/sdcard/PhotoTour/" + panoSet.name);
+            File zipfile = new File(paths + panoSet.name);
             File dir = new File(panoPicker.getFilesDir().getPath() + "/" + panoSet.name);
             if(dir.exists()) {
                 dir.delete();
