@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">NTS Tours</string>
-    <string name="panosurl">http://openvirtualworlds.org/ntstours/panolist.php</string>
+    <string name="panosurl">http://openvirtualworlds.org/panodemo/panolist.php</string>
     <string name="zippath">/sdcard/PhotoTour/</string>
 </resources>

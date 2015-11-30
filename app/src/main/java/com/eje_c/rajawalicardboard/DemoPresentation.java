@@ -288,16 +288,34 @@ public class DemoPresentation extends Presentation implements ISceneController {
             texMan.deleteTexture("pz"+idCount);
         idCount++;
 
-        skyBox.addTexture(SkyBox.Face.West, BitmapFactory.decodeFile(texture[0]), "nx" + idCount);
-        skyBox.addTexture(SkyBox.Face.East, BitmapFactory.decodeFile(texture[5]), "px"+idCount);
+        Bitmap ny = BitmapFactory.decodeFile(texture[0]);
+        Bitmap py = BitmapFactory.decodeFile(texture[1]);
+        Bitmap nz = BitmapFactory.decodeFile(texture[2]);
+        Bitmap pz = BitmapFactory.decodeFile(texture[3]);
+        Bitmap nx = BitmapFactory.decodeFile(texture[4]);
+        nx = flip(nx);
+        Bitmap px = BitmapFactory.decodeFile(texture[5]);
+        px = flip(px);
 
-        skyBox.addTexture(SkyBox.Face.North, BitmapFactory.decodeFile(texture[2]), "nz"+idCount);
-        skyBox.addTexture(SkyBox.Face.South, BitmapFactory.decodeFile(texture[3]), "pz" + idCount);
 
-        skyBox.addTexture(SkyBox.Face.Down, BitmapFactory.decodeFile(texture[1]), "ny" + idCount);
-        skyBox.addTexture(SkyBox.Face.Up, BitmapFactory.decodeFile(texture[4]), "py" + idCount);
+        skyBox.addTexture(SkyBox.Face.South, nx, "nx" + idCount);
+        skyBox.addTexture(SkyBox.Face.North, px, "px"+idCount);
+
+        skyBox.addTexture(SkyBox.Face.Up, nz, "nz"+idCount);
+        skyBox.addTexture(SkyBox.Face.Down, pz, "pz" + idCount);
+
+        skyBox.addTexture(SkyBox.Face.East, ny, "ny" + idCount);
+        skyBox.addTexture(SkyBox.Face.West, py, "py" + idCount);
 
         scene.addChild(skyBox);
+    }
+
+    public static Bitmap flip(Bitmap src) {
+        android.graphics.Matrix m = new android.graphics.Matrix();
+        m.preScale(-1, 1);
+        Bitmap dst = Bitmap.createBitmap(src, 0, 0, src.getWidth(), src.getHeight(), m, false);
+        src.recycle();
+        return dst;
     }
 
     @Override

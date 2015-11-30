@@ -51,7 +51,7 @@ public class MainActivity extends CardboardActivity {
     private CardboardOverlayView overlayView;
     private boolean cardboard;
 
-    private final int mMediaTypes = MediaRouter.ROUTE_TYPE_LIVE_AUDIO | MediaRouter.ROUTE_TYPE_LIVE_VIDEO | (1 << 2) | MediaRouter.ROUTE_TYPE_USER;
+    private final int mMediaTypes = MediaRouter.ROUTE_TYPE_LIVE_VIDEO | MediaRouter.ROUTE_TYPE_USER;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

@@ -3,6 +3,7 @@ package com.eje_c.rajawalicardboard;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.PorterDuff;
 import android.os.AsyncTask;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -160,8 +161,12 @@ public class PanoListAdapter extends BaseAdapter {
 
 
             run1.setText("Redownload");
+
+
             if(updateable)
-                run1.setBackgroundColor(panoPicker.getResources().getColor(R.color.Green));
+                run1.getBackground().setColorFilter(panoPicker.getResources().getColor(R.color.Green), PorterDuff.Mode.MULTIPLY);
+            /*else
+                run1.getBackground().setColorFilter(panoPicker.getResources().getColor(R.color.black), PorterDuff.Mode.MULTIPLY);*/
             run1.setTag(position);
             run1.setOnClickListener(new View.OnClickListener() {
                 @Override
