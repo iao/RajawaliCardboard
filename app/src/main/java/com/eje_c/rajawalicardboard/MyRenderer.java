@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -33,9 +34,11 @@ import org.rajawali3d.renderer.RenderTarget;
 import org.rajawali3d.util.Capabilities;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class MyRenderer extends RajawaliCardboardRenderer {
@@ -55,6 +58,8 @@ public class MyRenderer extends RajawaliCardboardRenderer {
     private static final int mImageSize = 3072;
     private boolean exit = false;
     private int exitTimer = 0;
+    private int texIndex;
+    private List<ATexture> usedTextures = new ArrayList<>();
 
     public MyRenderer(Context context, boolean cardboard) {
         super(context);
@@ -154,7 +159,7 @@ public class MyRenderer extends RajawaliCardboardRenderer {
 
     }
 
-    private static Sphere createPhotoSphereWithTexture(ATexture texture) {
+    private Sphere createPhotoSphereWithTexture(ATexture texture) {
         texture.shouldRecycle(true);
         Material material = new Material();
         material.setColor(0);
@@ -165,6 +170,8 @@ public class MyRenderer extends RajawaliCardboardRenderer {
             throw new RuntimeException(e);
         }
 
+        usedTextures.add(texture);
+
         Sphere sphere = new Sphere(50, 64, 32);
         sphere.setScaleX(-1);
         sphere.setMaterial(material);
@@ -172,13 +179,13 @@ public class MyRenderer extends RajawaliCardboardRenderer {
         return sphere;
     }
 
-    private static Sphere createPhotoSphereWithTexture(ATexture[] textures) {
+    private Sphere createPhotoSphereWithTexture(ATexture[] textures, int width, int height) {
 
         VertexShader vertexShader = new VertexShader();
         FragmentShader fragmentShader = new FragmentShader();
 
         fragmentShader.initialize();
-        fragmentShader.addShaderFragment(new TiledShader(Arrays.asList(textures)));
+        fragmentShader.addShaderFragment(new TiledShader(Arrays.asList(textures), width, height));
         fragmentShader.buildShader();
         fragmentShader.setNeedsBuild(false);
 
@@ -197,6 +204,8 @@ public class MyRenderer extends RajawaliCardboardRenderer {
             }
         }
 
+        usedTextures.addAll(Arrays.asList(textures));
+
         Sphere sphere = new Sphere(50, 64, 32);
         sphere.setScaleX(-1);
         sphere.setMaterial(material);
@@ -204,7 +213,15 @@ public class MyRenderer extends RajawaliCardboardRenderer {
         return sphere;
     }
 
-    private static Sphere createPhotoSphereWithTexture(StreamingTexture texture) {
+    private static Sphere createPhotoSphereWithMaterial(Material material, int width, int height) {
+        Sphere sphere = new Sphere(50, 64, 32);
+        sphere.setScaleX(-1);
+        sphere.setMaterial(material);
+
+        return sphere;
+    }
+
+    private Sphere createPhotoSphereWithTexture(StreamingTexture texture) {
         //texture.shouldRecycle(true);
         Material material = new Material();
         material.setColor(0);
@@ -222,7 +239,7 @@ public class MyRenderer extends RajawaliCardboardRenderer {
         return sphere;
     }
 
-    private static Sphere createSphereWithTexture(ATexture texture) {
+    private Sphere createSphereWithTexture(ATexture texture) {
         texture.shouldRecycle(true);
         Material material = new Material();
         material.setColor(0);
@@ -233,6 +250,8 @@ public class MyRenderer extends RajawaliCardboardRenderer {
             throw new RuntimeException(e);
         }
 
+        usedTextures.add(texture);
+
         Sphere sphere = new Sphere(10, 64, 32);
         sphere.setScaleX(-1);
         sphere.setMaterial(material);
@@ -240,7 +259,7 @@ public class MyRenderer extends RajawaliCardboardRenderer {
         return sphere;
     }
 
-    private static Cube createCubeBoxWithTextures(String texture0, String texture1, String texture2, String texture3, String texture4, String texture5) {
+    private Cube createCubeBoxWithTextures(String texture0, String texture1, String texture2, String texture3, String texture4, String texture5) {
 
         Material material = new Material();
         material.setColor(0);
@@ -248,6 +267,8 @@ public class MyRenderer extends RajawaliCardboardRenderer {
         CubeMapTexture texture = new CubeMapTexture("tex0", new Bitmap[]{BitmapFactory.decodeFile(texture0), BitmapFactory.decodeFile(texture1), BitmapFactory.decodeFile(texture2), BitmapFactory.decodeFile(texture3), BitmapFactory.decodeFile(texture4), BitmapFactory.decodeFile(texture5)});
         texture.shouldRecycle(true);
         texture.isSkyTexture(true);
+
+        usedTextures.add(texture);
 
         try {
             material.addTexture(texture);
@@ -261,7 +282,7 @@ public class MyRenderer extends RajawaliCardboardRenderer {
         return cube;
     }
 
-    private static Cube createCubeBoxWithTextures(Bitmap[] bitmaps) {
+    private Cube createCubeBoxWithTextures(Bitmap[] bitmaps) {
 
         Material material = new Material();
         material.setColor(0);
@@ -276,13 +297,15 @@ public class MyRenderer extends RajawaliCardboardRenderer {
             throw new RuntimeException(e);
         }
 
+        usedTextures.add(texture);
+
         Cube cube = new Cube(10, true, true);
         cube.setMaterial(material);
 
         return cube;
     }
 
-    private static Cube createCubeBoxWithTexture(Bitmap bitmap) {
+    private Cube createCubeBoxWithTexture(Bitmap bitmap) {
 
         Material material = new Material();
         material.setColor(0);
@@ -297,13 +320,15 @@ public class MyRenderer extends RajawaliCardboardRenderer {
             throw new RuntimeException(e);
         }
 
+        usedTextures.add(texture);
+
         Cube cube = new Cube(10, true, false);
         cube.setMaterial(material);
 
         return cube;
     }
 
-    private static Cube createCubeBoxWithTexture(ATexture texture) {
+    private Cube createCubeBoxWithTexture(ATexture texture) {
 
         Material material = new Material();
         material.setColor(0);
@@ -318,6 +343,8 @@ public class MyRenderer extends RajawaliCardboardRenderer {
             throw new RuntimeException(e);
         }
 
+        usedTextures.add(texture);
+
         Cube cube = new Cube(-10);
         cube.setDoubleSided(true);
         cube.setMaterial(material);
@@ -325,7 +352,7 @@ public class MyRenderer extends RajawaliCardboardRenderer {
         return cube;
     }
 
-    private static Cube createCubeBoxWithTextures(int texture0, int texture1, int texture2, int texture3, int texture4, int texture5) {
+    private Cube createCubeBoxWithTextures(int texture0, int texture1, int texture2, int texture3, int texture4, int texture5) {
 
         Material material = new Material();
         material.setColor(0);
@@ -340,6 +367,8 @@ public class MyRenderer extends RajawaliCardboardRenderer {
             throw new RuntimeException(e);
         }
 
+        usedTextures.add(texture);
+
         Cube cube = new Cube(100, true, true);
         cube.setMaterial(material);
 
@@ -351,6 +380,8 @@ public class MyRenderer extends RajawaliCardboardRenderer {
         descriptionCube = null;
         descriptionCount = 0;
         getCurrentScene().clearChildren();
+        TextureManager.getInstance().removeTextures(usedTextures);
+        usedTextures.clear();
         if(mMediaPlayer != null) {
             mMediaPlayer.stop();
             mMediaPlayer.release();
@@ -382,34 +413,40 @@ public class MyRenderer extends RajawaliCardboardRenderer {
         getCurrentScene().addChild(sphere);
     }
 
-    public void loadPhotoSperePanorama(int... textureIDs) {
+    public void loadPhotoSperePanorama(int width, int height, int... textureIDs) {
         clear();
         ATexture[] textures = new ATexture[textureIDs.length];
         int i = 0;
         for (int texture: textureIDs) {
             textures[i++] = new Texture("tex"+i, texture);
         }
-        Sphere sphere = createPhotoSphereWithTexture(textures);
+        Sphere sphere = createPhotoSphereWithTexture(textures, width, height);
         getCurrentScene().addChild(sphere);
     }
 
     public void loadPhotoSpherePanorama(String texture) {
         //obj.destroy();
         clear();
-        Bitmap bitmap = BitmapFactory.decodeFile(texture);
-        int size = Math.max(bitmap.getWidth(), bitmap.getHeight());
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(texture, options);
+        int size = Math.max(options.outHeight, options.outWidth);
         if(Capabilities.getInstance().getMaxTextureSize() >= size) {
+            Bitmap bitmap = BitmapFactory.decodeFile(texture);
             loadPhotoSpherePanorama(bitmap);
         } else {
             int texSize = Capabilities.getInstance().getMaxTextureSize();
-            int width = (int) Math.ceil((double)bitmap.getWidth()/texSize);
-            int height = (int) Math.ceil((double)bitmap.getHeight()/texSize);
+            int width = (int) Math.ceil((double)options.outWidth/texSize);
+            int height = (int) Math.ceil((double)options.outHeight/texSize);
             Log.d("MyRender", width + " " + height);
 
-            Bitmap[] bitmaps = generateTiles(bitmap, width, height);
-            bitmap.recycle();
-            loadPhotoSperePanorama(bitmaps);
-
+            Bitmap[] bitmaps;
+            try {
+                bitmaps = loadTiles(texture, options, width, height);
+                loadPhotoSperePanorama(width, height, bitmaps);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
     }
@@ -419,27 +456,27 @@ public class MyRenderer extends RajawaliCardboardRenderer {
         getCurrentScene().addChild(sphere);
     }
 
-    public void loadPhotoSperePanorama(Bitmap... bitmaps) {
+    public void loadPhotoSperePanorama(int width, int height, Bitmap... bitmaps) {
         clear();
         ATexture[] textures = new ATexture[bitmaps.length];
         int i = 0;
         for (Bitmap bitmap: bitmaps) {
-            textures[i++] = new Texture("tex"+i, bitmap);
-        }
-        Sphere sphere = createPhotoSphereWithTexture(textures);
+                  textures[i++] = new Texture("tex"+i, bitmap);
+                }
+        Sphere sphere = createPhotoSphereWithTexture(textures, width, height);
         getCurrentScene().addChild(sphere);
     }
 
-    private Bitmap[] generateTiles(Bitmap bitmap, int width, int height) {
+    private Bitmap[] loadTiles(String texture, BitmapFactory.Options options, int width, int height) throws IOException {
         Bitmap[] bitmaps = new Bitmap[width*height];
-        int tileWidth = bitmap.getWidth() / width;
-        int tileHeight = bitmap.getHeight() / height;
-        for(int i = 0; i < width; i++) {
-            for(int j = 0; j < height; j++) {
+
+        int tileWidth = options.outWidth / width;
+        int tileHeight = options.outHeight / height;
+        BitmapRegionDecoder decoder = BitmapRegionDecoder.newInstance(texture, false);
+        for(int j = 0; j < height; j++) {
+            for(int i = 0; i < width; i++) {
                 int index  = i + j*width;
-                bitmaps[index] = Bitmap.createBitmap(tileWidth, tileHeight, bitmap.getConfig());
-                Canvas canvas = new Canvas(bitmaps[index]);
-                canvas.drawBitmap(bitmap, new Rect(tileWidth*i, tileHeight*j, tileWidth*(i+1), tileHeight*(j+1)), new Rect(0, 0, tileWidth, tileHeight), null);
+                bitmaps[index] = decoder.decodeRegion(new Rect(tileWidth*i, tileHeight*j, tileWidth*(i+1), tileHeight*(j+1)), null);
             }
         }
 
@@ -592,6 +629,8 @@ public class MyRenderer extends RajawaliCardboardRenderer {
         texture.shouldRecycle(true);
         Material material = new Material();
         material.setColor(0);
+
+        usedTextures.add(texture);
 
         try {
             material.addTexture(texture);
